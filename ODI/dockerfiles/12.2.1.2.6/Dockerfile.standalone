@@ -1,0 +1,103 @@
+# LICENSE CDDL 1.0 + GPL 2.0
+#
+# Copyright (c) 2014-2015 Oracle and/or its affiliates. All rights reserved.
+#
+# ORACLE DOCKERFILES PROJECT
+# --------------------------
+# This is the Dockerfile for ODI 12.2.1.2.6  Quick Install Distro
+# 
+# REQUIRED FILES TO BUILD THIS IMAGE
+# ----------------------------------
+# (1) fmw_12.2.1.2.6_odi_Disk1_1of2.zip 
+#     Download the Developer Quick installer from http://www.oracle.com/technetwork/middleware/weblogic/downloads/wls-for-dev-1703574.html 
+# (1) fmw_12.2.1.2.6_odi_Disk1_1of2.zip 
+#     Download the Developer Quick installer from http://www.ora
+#
+# (2) server-jre-8uXX-linux-x64.tar.gz
+#     Download from http://www.oracle.com/technetwork/java/javase/downloads/server-jre8-downloads-2133154.html 
+#
+# HOW TO BUILD THIS IMAGE
+# -----------------------
+# Put all downloaded files in the same directory as this Dockerfile
+# Run: 
+#      $ docker build -t oracle/weblogic:12.2.1.2-developer . 
+#
+# IMPORTANT
+# ---------
+# The resulting image of this Dockerfile contains an ODI Standalone Agent with default port 
+#
+# Pull base image
+# From the Oracle Registry
+# -------------------------
+FROM oracle/database:12.2.0.1-ee
+
+# Maintainer
+# ----------
+MAINTAINER Monica Riccelli <monica.riccelli@oracle.com>
+
+# Common environment variables required for this build (do NOT change)
+# --------------------------------------------------------------------
+
+ENV ORACLE_HOME=/u01/app/oracle/Middleware \
+    USER_MEM_ARGS="-Djava.security.egd=file:/dev/./urandom" \
+    PATH=$PATH:/usr/java/default/bin:/u01/app/oracle/Middleware/oracle_common/common/bin:/u01/oracle/Middleware/wlserver/common/bin
+    
+# Setup filesystem and oracle user
+# Adjust file permissions, go to /u01 as user 'oracle' to proceed with WLS installation
+# ------------------------------------------------------------  
+USER root
+RUN mkdir -p /u01/app && \ 
+    chmod a+xr /u01/app && \
+    mkdir -p ~/.odi && \
+    chown oracle:dba -R /u01 && \
+    chown oracle:dba ~/.odi
+#useradd -b /u01/app/oracle -d /u01/app/oracle -m -s /bin/bash oracle && \
+    
+# Copy scripts
+#-------------
+COPY startAgent.sh /u01/app/oracle/
+
+ENV SCRIPT_FILE=/u01/app/oracle/startAgent.sh \
+    DOMAIN_NAME="${DOMAIN_NAME:-base_domain}" \
+    DOMAIN_HOME=/u01/app/oracle/Middleware/user_projects/domains/${DOMAIN_NAME:-base_domain} 
+    
+# Environment variables required for this build (do NOT change)
+# -------------------------------------------------------------
+ENV FMW_PKG=fmw_12.2.1.2.6_odi_Disk1_1of2.zip \
+    FMW_PKG2=fmw_12.2.1.2.6_odi_Disk1_2of2.zip \
+    FMW_JAR=fmw_12.2.1.2.6_odi.jar \
+    FMW_JAR2=fmw_12.2.1.2.6_odi2.jar \
+    DEBUG_FLAG=true \
+    PRODUCTION_MODE=dev 
+    
+# Copy packages
+# -------------
+COPY $FMW_PKG $FMW_PKG2 install.file oraInst.loc createOdiDomainForStandaloneAgent.py oracledi.gz rcuResponseFile.properties runOracle.sh /u01/app/oracle/
+
+RUN chmod +xr $SCRIPT_FILE
+RUN chown oracle:dba  /u01/app/oracle && \
+    cd /u01/app/oracle && \
+    chown oracle:dba $FMW_PKG $FMW_PKG2 oracledi.gz rcuResponseFile.properties runOracle.sh
+
+# Install 
+# ------------------------------------------------------------
+USER oracle   
+RUN mkdir -p ~/.odi && tar xfz /u01/app/oracle/oracledi.gz -C ~/.odi
+RUN cd /u01/app/oracle && $JAVA_HOME/bin/jar xf /u01/app/oracle/$FMW_PKG && $JAVA_HOME/bin/jar xf /u01/app/oracle/$FMW_PKG2 && cd - && \
+    $JAVA_HOME/bin/java -jar /u01/app/oracle/$FMW_JAR -silent -responseFile /u01/app/oracle/install.file -invPtrLoc /u01/app/oracle/oraInst.loc -jreLoc $JAVA_HOME -ignoreSysPrereqs -force -novalidation ORACLE_HOME=$ORACLE_HOME && \
+    rm /u01/app/oracle/$FMW_JAR /u01/app/oracle/$FMW_JAR2 /u01/app/oracle/$FMW_PKG /u01/app/oracle/$FMW_PKG2 /u01/app/oracle/oraInst.loc /u01/app/oracle/install.file && \
+    cd /u01/app/oracle/Middleware/oracle_common/bin && \
+    echo "welcome1" >/u01/app/oracle/passwords.txt && \
+    echo "welcome1" >>/u01/app/oracle/passwords.txt && \
+    echo "welcome1" >>/u01/app/oracle/passwords.txt 
+
+RUN /u01/app/oracle/startAgent.sh >/dev/null &2>&1 
+#    ./rcu -silent -responseFile  /u01/app/oracle/rcuResponseFile.properties  -f </u01/app/oracle/passwords.txt 
+#    nohup /u01/app/oracle/user_projects/domains/base_domain/bin/agent.sh -NAME=OracleDIAgent1 &
+
+
+WORKDIR ${ORACLE_HOME} 
+CMD ["/u01/app/oracle/startAgent.sh"]
+# Define default command to start script. 
+#CMD ["/u01/app/oracle/createAndStartEmptyDomain.sh"] 
+#CMD ["/u01/app/oracle/user_projects/domains/base_domain/bin/agent.sh -NAME=OracleDIAgent1"]
