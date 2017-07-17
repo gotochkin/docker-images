@@ -34,7 +34,20 @@ fi
 export ORACLE_SID=ORCLCDB
 export ORAENV_ASK=NO
 source oraenv
+ODIREPOCNT=`$ORACLE_HOME/bin/sqlplus -S "sys/welcome1@localhost:1521/ORCLPDB1 as sysdba" <<EOF
+set timing off heading off feedback off pages 0 serverout on feed off
+select count(*) from schema_version_registry where comp_id='ODI';
+EOF`
 
+#Create an ODI repository if it doesn't exists in the database.
+if [ $ODIREPOCNT -gt  0 ]; then
+	/bin/echo "The ODI repo exists"
+	NEWREPO=0
+else
+	cd /u01/app/oracle/Middleware/oracle_common/bin
+	./rcu -silent -responseFile  /u01/app/oracle/rcuResponseFile.properties  -f </u01/app/oracle/passwords.txt
+	NEWREPO=1
+fi
 
 ADD_DOMAIN=1
 if [ ! -f ${DOMAIN_HOME}/bin/agent.sh ]; then
@@ -47,28 +60,30 @@ if [ $ADD_DOMAIN -eq 0 ]; then
 ADMIN_PASSWORD=$(date| md5sum | fold -w 8 | head -n 1)
 
 echo ""
-echo "    Oracle WebLogic Server Auto Generated Empty Domain:"
+echo "    Oracle WebLogic Standalone ODI agent Domain:"
 echo ""
 echo "      ----> 'weblogic' admin password: $ADMIN_PASSWORD"
 echo ""
 
-#sed -i -e "s|ADMIN_PASSWORD|$ADMIN_PASSWORD|g" /u01/oracle/create-wls-domain.py
+sed -i -e "s|ADMIN_PASSWORD|$ADMIN_PASSWORD|g" /u01/oracle/createOdiDomainForStandaloneAgent.py
 
-# Create an empty domain
+# Create an ODI standalone agent  domain
 cd /u01/app/oracle
 wlst.sh createOdiDomainForStandaloneAgent.py
-#mkdir -p ${DOMAIN_HOME}/servers/AdminServer/security/ 
-#echo "username=weblogic" > /u01/oracle/user_projects/domains/$DOMAIN_NAME/servers/AdminServer/security/boot.properties 
-#echo "password=$ADMIN_PASSWORD" >> /u01/oracle/user_projects/domains/$DOMAIN_NAME/servers/AdminServer/security/boot.properties 
-#${DOMAIN_HOME}/bin/setDomainEnv.sh 
 fi
 
 
 # Start the Agent
-${DOMAIN_HOME}/bin/agent.sh -NAME=OracleDIAgent1 
-#touch ${DOMAIN_HOME}/servers/AdminServer/logs/AdminServer.log
-#tail -f ${DOMAIN_HOME}/servers/AdminServer/logs/AdminServer.log &
-tail -f ${DOMAIN_HOME}/system_components/ODI/OracleDIAgent1/logs/oracledi/odiagent.log
+AGENTPROC=`ps -ef | grep OracleDIAgent1 | grep -v grep | wc -l`
+
+if [ $AGENTPROC -eq 2 ]; then
+	echo "Agent is already running"
+elif [ $NEWREPO -eq 1 ]; then 
+	echo "New repository! Please configure agent in ODI studio ans start it manually after that."
+else
+	nohup ${DOMAIN_HOME}/bin/agent.sh -NAME=OracleDIAgent1 &
+	tail ${DOMAIN_HOME}/system_components/ODI/OracleDIAgent1/logs/oracledi/odiagent.log
+fi
 
 childPID=$!
 wait $childPID

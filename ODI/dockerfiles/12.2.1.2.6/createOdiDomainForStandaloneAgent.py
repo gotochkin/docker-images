@@ -31,7 +31,7 @@ wls_domain_name="base_domain";
 wls_user="weblogic";
 
 # Weblogic admin user's password
-wls_pass="welcome1";
+wls_pass="ADMIN_PASSWORD";
 
 # ODI supervisor user
 odi_supervisor='SUPERVISOR';

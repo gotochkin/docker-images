@@ -1,45 +1,37 @@
-Oracle WebLogic Server on Docker
+Oracle Data Integration on Docker
 =================================
-These  Docker configurations have been used to create the Oracle WebLogic Server image. Providing this WLS image facilitates the configuration, and environment setup for DevOps users. This project includes the installation and the creation of an empty WebLogic Server domain (only an Admin Server). These Oracle WebLogic Server 12.2.1.2 images are based on Oracle Linux and Oracle JDK 8 (Server).
-
-The certification of Oracle WebLogic Server on Docker does not require the use of any file presented in this repository. Customers and users are welcome to use them as starters, and customize/tweak, or create from scratch new scripts and Dockerfiles.
-
-For more information on the certification, please check the [Oracle WebLogic Server on Docker Certification Whitepaper](http://www.oracle.com/technetwork/middleware/weblogic/overview/weblogic-server-docker-containers-2491959.pdf) and [WebLogic Server Blog](https://blogs.oracle.com/WebLogicServer/) for updates.
+These  Docker configurations have been used to create the Oracle Data Integration image. This project includes the installation and the creation of a ODI repository, installation and initial configuration a Weblogic domain for a standalone ODI agent. These Oracle WebLogic Server 12.2.1.2 images are based on Oracle Linux and Oracle JDK 8 (Server) and Oracle Database 12.2.0.1 images.
 
 ## How to build and run
-This project offers sample Dockerfiles for Oracle WebLogic Server 12cR2 (12.2.1.2), and it provides at least one Dockerfile for the 'developer' distribution, a second Dockerfile for the 'generic' distribution, and a third Dockerfile for the 'infrastructure' distribution. To assist in building the images, you can use the [buildDockerImage.sh](dockerfiles/buildDockerImage.sh) script. See below for instructions and usage.
+This project offers sample Dockerfiles for Oracle DI agent, and it provides at least one Dockerfile for the 'standalone' distribution. To assist in building the images, you can use the [buildDockerImage.sh](dockerfiles/buildDockerImage.sh) script. See below for instructions and usage.
 
 The `buildDockerImage.sh` script is just a utility shell script that performs MD5 checks and is an easy way for beginners to get started. Expert users are welcome to directly call `docker build` with their prefered set of parameters.
 
 
 ### Building Oracle WebLogic Server Docker Install Images
-**IMPORTANT:** you have to download the binary of Oracle WebLogic Server and put it in place (see `.download` files inside dockerfiles/<version>).
+**IMPORTANT:** you have to download the binary of Oracle Data Integrator  and put it in place (see `.download` files inside dockerfiles/<version>).
 
-Before you build, choose which version and distribution you want to build an image,then download the required packages (see .download files) and drop them in the folder of your distribution version of choice. Then go into the **dockerfiles** folder and run the **buildDockerImage.sh** script as root.
+Before you build, choose which version and distribution you want to build an image,then download the required packages (see .download files) and drop them in the folder of your distribution version of choice. Then go into the **dockerfiles** folder and run the **buildDockerImage.sh** script.
 
         $ sh buildDockerImage.sh
-        Usage: buildDockerImage.sh -v [version] [-d | -g | -i] [-s]
-        Builds a Docker Image for Oracle WebLogic Server.
-          
-        Parameters:
-           -v: version to build. Required.
-           Choose : 12.2.1.2
-           -d: creates image based on 'developer' distribution
-           -g: creates image based on 'generic' distribution
-           -i: creates image based on 'infrastructure' distribution
-           -c: enables Docker image layer cache during build
-           -s: skips the MD5 check of packages
-        
-        * select one distribution only: -d, -g, or -i
+       Usage: buildDockerImage.sh -v [version] [-t | -e] [-s] [-c]
+       Builds a Docker Image for Oracle ODI.
+  
+       Parameters:
+          -v: version to build. Required.
+             Choose one of: $(for i in $(ls -d */); do echo -n "${i%%/}  "; done)
+          -t: creates image based on standalone agent  distribution
+          -e: creates image based on enterprise agent distribution
+          -c: enables Docker image layer cache during build
+          -s: skips the MD5 check of packages 
+
+       * select one distribution only: -t or -e
         
         LICENSE CDDL 1.0 + GPL 2.0
         
         Copyright (c) 2014-2015 Oracle and/or its affiliates. All rights reserved.
 
-**IMPORTANT:** the resulting images will have an empty domain (only Admin Server) by default. You must extend the image with your own Dockerfile, and create your domain using WLST. You might take a look at the use case samples.
-
-## Samples for Oracle WebLogic Server Domain Creation
-To give users an idea on how to create a domain from a custom Dockerfile to extend the WebLogic Server image, we provide a few samples for 12c versions for the Developer distribution. For an example we provide samples to create a **12.2.1.2 medrec** domain.
+**IMPORTANT:** the resulting images will have a configured agent with default name. You must add or correct the physical agent in your repository using ODI studio.
 
 ### Sample Installation and Base Domain for Oracle WebLogic Server 12.2.1.2
 The image **oracle/weblogic:12.2.1.2-developer** will configure a **base_domain** with the following settings:
