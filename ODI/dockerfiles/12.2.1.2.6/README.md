@@ -1,6 +1,14 @@
 Oracle Data Integration on Docker
 =================================
-These  Docker configurations have been used to create the Oracle Data Integration image. This project includes the installation and the creation of a ODI repository, installation and initial configuration a Weblogic domain for a standalone ODI agent. These Oracle WebLogic Server 12.2.1.2 images are based on Oracle Linux and Oracle JDK 8 (Server) and Oracle Database 12.2.0.1 images.
+These  Docker configurations have been used to create the Oracle Data Integration image. It has been created for education purposes only and not designated for any production usage. It is supposed to work with Oracle developed and designed docker images with minor modifications. The Oracle docker project can be found at https://github.com/oracle/docker-images . This ODI fork project includes the installation and the creation of a ODI repository, installation and initial configuration a Weblogic domain for a standalone ODI agent. adding and starting the ODI standalone agent in the container. The Oracle Data Integrator 12.2.1.2.6 image is based on Oracle Database 12.2.0.1 EE built on top of Oracle Linux with Oracle JDK 8 and optional supplemental packages installed.
+The basic hiearachy is :
+-- oracle/odi:12.2.1.2.6-standalone
+	|
+	oracle/database:12.2.0.1-ee
+		|
+		oracle/serverjre:8
+			|
+			oraclelinux:7-slim
 
 ## How to build and run
 This project offers sample Dockerfiles for Oracle DI agent, and it provides at least one Dockerfile for the 'standalone' distribution. To assist in building the images, you can use the [buildDockerImage.sh](dockerfiles/buildDockerImage.sh) script. See below for instructions and usage.
@@ -14,14 +22,13 @@ The `buildDockerImage.sh` script is just a utility shell script that performs MD
 Before you build, choose which version and distribution you want to build an image,then download the required packages (see .download files) and drop them in the folder of your distribution version of choice. Then go into the **dockerfiles** folder and run the **buildDockerImage.sh** script.
 
         $ sh buildDockerImage.sh
-       Usage: buildDockerImage.sh -v [version] [-t | -e] [-s] [-c]
+       Usage: buildDockerImage.sh -v [version] [-t ] [-s] [-c]
        Builds a Docker Image for Oracle ODI.
   
        Parameters:
           -v: version to build. Required.
              Choose one of: $(for i in $(ls -d */); do echo -n "${i%%/}  "; done)
           -t: creates image based on standalone agent  distribution
-          -e: creates image based on enterprise agent distribution
           -c: enables Docker image layer cache during build
           -s: skips the MD5 check of packages 
 
@@ -31,7 +38,7 @@ Before you build, choose which version and distribution you want to build an ima
         
         Copyright (c) 2014-2015 Oracle and/or its affiliates. All rights reserved.
 
-**IMPORTANT:** the resulting images will have a configured agent with default name. You must add or correct the physical agent in your repository using ODI studio.
+**IMPORTANT:** the resulting images will have a configured agent with default name OracleDIAgent1. 
 
 ### Sample Installation and Base Domain for Oracle WebLogic Server 12.2.1.2
 The image **oracle/weblogic:12.2.1.2-developer** will configure a **base_domain** with the following settings:
@@ -44,7 +51,7 @@ The image **oracle/weblogic:12.2.1.2-developer** will configure a **base_domain*
  * Admin Server on port: `7001`
  * Production Mode: `developer`
   
-**IMPORTANT:** If you intend to run these images in production you must change the Production Mode to production.
+**IMPORTANT:** If you intend to run these images in production you must change the Production Mode to production. Recommended to change all passwords after installation.
  
 
 ###Admin Password
@@ -57,51 +64,59 @@ If you need to find the password at a later time, grep for "password" in the Doc
 
         $ docker logs --details <Container-id>
 
-### Write your own Oracle WebLogic Server domain with WLST
-The best way to create your own, or extend domains is by using [WebLogic Scripting Tool](https://docs.oracle.com/middleware/1221/cross/wlsttasks.htm). You can find an example of a WLST script to create domains at [create-wls-domain.py](dockerfiles/12.2.1.2/container-scripts/create-wls-domain.py). You may want to tune this script with your own setup to create DataSources and Connection pools, Security Realms, deploy artifacts, and so on. You can also extend images and override an existing domain, or create a new one with WLST.
 
-## Building the Oracle WebLogic Server Docker Image
-To try a sample of a WebLogic Server image with a base domain configured, follow the steps below:
+## Building the Oracle Data Integrator  Image
+To build a sample ODI standalone agent image please execute the steps below:
 
-  1. Build the **12.2.1.2** image, go into  **dockerfiles** and call 
-
-        $ sh buildDockerImage.sh -v 12.2.1.2-d
+  1. Build the image oracle/serverjre:8 (Oracle Linux 7 with JRE 8 or JDK 8 )
+          
+        Download or clone Oracle docker project from https://github.com/oracle/docker-images.
+        $ cd docker-images/OracleJava/java-8
+        Download oracle JRE server-jre-8u*-linux-x64.tar.gz or JDK jdk-8u*-linux-x64.tar.gz from Oracle site
+        In case of using JDK replace "ENV JAVA_PKG=server-jre-8u*-linux-x64.tar.gz" to "ENV JAVA_PKG=jdk-8u*-linux-x64.tar.gz" in the Dockerfile
+        $ ./build.sh
 
   2. Verify you now have this image in place with
 
         $ docker images
 
-  3. Start a container from the image created in step 1: 
+  3. Build the oracle/database:12.2.0.1-ee  (Oracle Database 12.2.0.1 EE based on Linux image with JRE or JDK)
 
-        $ docker run -d oracle/weblogic:12.2.1.2-developer
+        $ cd docker-images/OracleDatabase/dockerfiles/12.2.0.1
+        Download Oracle Database installation archive linuxx64_12201_database.zip from Oracle site http://www.oracle.com/technetwork/database/enterprise-edition/downloads/index.html
+        Replace "FROM oraclelinux:7-slim" by "FROM oracle/serverjrevnc:8" in the Dockerfile.ee
+        $ cd ..
+        $ ./buildDockerImage.sh -v 12.2.0.1 -e
 
-  4. Run the administration console
+  4. Build the oracle/odi:12.2.1.2.6-standalone  (Oracle Data Integrator 12.2.1.2.6 standalone based on Oracle Database 12.2.0.1 EE image)
 
-        $ docker inspect --format '{{.NewworkSettings.IPAddress}}' <container-name>
-        This returns the IPAddress (example xxx.xx.x.x) of the container.  Got to your browser and enter http://xxx.xx.x.x:8001/console
+        $ cd docker-images/ODI/dockerfiles/12.2.1.2.6
+        Download Oracle Data Integrator 12.2.1.2.6  installation archives fmw_12.2.1.2.6_odi_Disk1_1of2.zip and fmw_12.2.1.2.6_odi_Disk1_2of2.zip from Oracle site http://www.oracle.com/technetwork/middleware/data-integrator/downloads/index.html
+        $ cd ..
+        $ ./buildDockerImage.sh -v 12.2.1.2.6 -t
+
+  5. Start a container from the image created in step 1: 
+
+        $ docker run --name oditest -p 1521:1521 -p 5500:5500 -p 5901:5901 -p 5902:5902 --env ORACLE_BASE=/opt/oracle --env ORACLE_HOME=/opt/oracle/product/12.2.0.1/dbhome_1 oracle/odi:12.2.1.2.6-standalone
+
+        or if you want to use a persistent or previously created database in a directory on an OS FS (as example /home/oracle/oradata) to reuse it later:
+
+        $ docker run --name oditest -p 1521:1521 -p 5500:5500 -p 5901:5901 -p 5902:5902 -p 20910:20910 -v /home/oracle/oradata:/opt/oracle/oradata --env ORACLE_BASE=/opt/oracle --env ORACLE_HOME=/opt/oracle/product/12.2.0.1/dbhome_1 oracle/odi:12.2.1.2.6-standalone
         
+       -p is for a port mapping , -v is for your persistent volume for database files and  -env is for environment variables used diring deployment 
 
-## Choose your Oracle WebLogic Server Distribution
-This project hosts two to three configurations (depending on Oracle WebLogic Server version) for building Docker images with WebLogic Server 12c.
+  4. Run the ODI studio inside the container (requires to have an X window or a vnc server and x-terminal)
 
- * Quick Install Developer Distribution
-
-   - For more information on the Oracle WebLogic Server 12cR2 Quick Install Developer Distribution, visit [WLS Quick Install Distribution for Oracle WebLogic Server 12.2.1.2.0](http://download.oracle.com/otn/nt/middleware/12c/wls/12212/README.txt).
-
- * Generic Distribution
-
-   - For more information on the Oracle WebLogic Server 12cR2 Generic Full Distribution, visit [WebLogic Server 12.2.1.2 Documentation](http://docs.oracle.com/middleware/12212/wls/index.html).
-
- * Fusion Middleware Infrastructure Distribution
-
-   - For more information on the Oracle WebLogic Server 12cR2 Infrastructure Full Distribution, visit [WebLogic Server 12.2.1.2 Infrastructure Documentation](https://docs.oracle.com/middleware/12212/core/INFIN/).
+     In your xterminal run:   
+     $ /u01/app/oracle/Middleware/odi/studio/odi.sh
+     First time it will ask whether you want to use an Oracle wallet. If you want to use preconfigured connection then do not use wallet. The SUPERVISOR and DEV_ODI_REPO users have password "welcome1". You need to change it right after installation. The database connection string is oracle:thin:@//localhost:1521/ORCLPDB1
 
 ## License
-To download and run Oracle WebLogic Server 12c Distribution regardless of inside or outside a Docker container, and regardless of the distribution, you must download the binaries from Oracle website and accept the license indicated at that page.
+To download and run Oracle Data Integrator 12c Distribution regardless of inside or outside a Docker container, and regardless of the distribution, you must download the binaries from Oracle website and accept the license indicated at that page.
 
-To download and run Oracle JDK regardless of inside or outside a Docker container, you must download the binary from Oracle website and accept the license indicated at that pge.
+To download and run Oracle JDK regardless of inside or outside a Docker container, you must download the binary from Oracle website and accept the license indicated at that page.
 
-All scripts and files hosted in this project and GitHub [docker/OracleWebLogic](./) repository required to build the Docker images are, unless otherwise noted, released under the Common Development and Distribution License (CDDL) 1.0 and GNU Public License 2.0 licenses.
+All scripts and files hosted in this project and GitHub [docker-images/ODI](./) repository required to build the Docker images are, unless otherwise noted, released under the Common Development and Distribution License (CDDL) 1.0 and GNU Public License 2.0 licenses.
 
-## Copyright
-Copyright (c) 2014-2016 Oracle and/or its affiliates. All rights reserved.
+## Disclaimer
+Created in ediucation purposes only based on Oracle docker project scripts located on https://github.com/oracle/docker-images 

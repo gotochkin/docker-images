@@ -6,14 +6,13 @@
 usage() {
 cat << EOF
 
-Usage: buildDockerImage.sh -v [version] [-t | -e] [-s] [-c]
+Usage: buildDockerImage.sh -v [version] [-t ] [-s] [-c]
 Builds a Docker Image for Oracle ODI.
   
 Parameters:
    -v: version to build. Required.
        Choose one of: $(for i in $(ls -d */); do echo -n "${i%%/}  "; done)
    -t: creates image based on standalone agent  distribution
-   -e: creates image based on enterprise agent distribution
    -c: enables Docker image layer cache during build
    -s: skips the MD5 check of packages
 
@@ -40,7 +39,6 @@ if [ "$#" -eq 0 ]; then usage; fi
 
 # Parameters
 STANDALONE=0
-ENTERPRISE=0
 VERSION="12.2.1.2.6"
 SKIPMD5=0
 NOCACHE=true
@@ -54,9 +52,6 @@ while getopts "hcstev:" optname; do
       ;;
     "t")
       STANDALONE=1
-      ;;
-    "e")
-      ENTERPRISE=1
       ;;
     "v")
       VERSION="$OPTARG"
