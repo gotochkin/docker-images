@@ -1,12 +1,6 @@
 #!/bin/bash
 # 
-# Since: October, 2014
-# Author: bruno.borges@oracle.com
-# Description: script to build a Docker image for WebLogic
-# 
-# DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
-# 
-# Copyright (c) 2014-2015 Oracle and/or its affiliates. All rights reserved.
+# Description: script to build a Docker image for ODI
 # 
 
 usage() {
@@ -26,8 +20,6 @@ Parameters:
 * select one distribution only: -t or -e
 
 LICENSE CDDL 1.0 + GPL 2.0
-
-Copyright (c) 2014-2015 Oracle and/or its affiliates. All rights reserved.
 
 EOF
 exit 0
@@ -49,7 +41,6 @@ if [ "$#" -eq 0 ]; then usage; fi
 # Parameters
 STANDALONE=0
 ENTERPRISE=0
-INFRASTRUCTURE=0
 VERSION="12.2.1.2.6"
 SKIPMD5=0
 NOCACHE=true
@@ -87,11 +78,9 @@ elif [ $STANDALONE -eq 1 ]; then
   DISTRIBUTION="standalone"
 elif [ $ENTERPRISE -eq 1 ]; then
   DISTRIBUTION="enterprise"
-else
-  DISTRIBUTION="standalone"
 fi
 
-# WebLogic Image Name
+# ODI Image Name
 IMAGE_NAME="oracle/odi:$VERSION-$DISTRIBUTION"
 
 # Go into version folder
