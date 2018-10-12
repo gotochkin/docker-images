@@ -55,7 +55,7 @@ RUN yum install -y libaio.x86_64 && \
     rpm -ihv --nodeps $ORA_INST_CLIENT && \
     jar -xf $APEX_FILE && \
     rm $APEX_FILE && \
-    ln -s apex/images $ORDS_HOME/doc_root/i && \
+    ln -s $ORDS_HOME/apex/images $ORDS_HOME/doc_root/i && \
     mkdir -p $ORDS_HOME/config/ords && \
     java -jar $ORDS_HOME/ords.war configdir $ORDS_HOME/config && \
     chown -R oracle:dba $ORDS_HOME \

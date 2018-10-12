@@ -34,7 +34,8 @@ EOF
     @apexins.sql apex apex temp /i/
     @apex_rest_config.sql $APEXL_PWD $APEXR_PWD
     alter user APEX_PUBLIC_USER account unlock;
-    alter user APEX_PUBLIC_USER identified by $APEX_PWD
+    alter user APEX_PUBLIC_USER identified by $APEX_PWD;
+    exit;
 EOF
     echo "Apex has been reset/installed at "`date +%F-%T` > $ORDS_HOME/.apex_installed
 elif (( $APEX_STATUS < 1 )); then 
@@ -46,7 +47,8 @@ elif (( $APEX_STATUS < 1 )); then
     @apexins.sql apex apex temp /i/
     @apex_rest_config.sql $APEXL_PWD $APEXR_PWD
     alter user APEX_PUBLIC_USER account unlock;
-    alter user APEX_PUBLIC_USER identified by $APEX_PWD
+    alter user APEX_PUBLIC_USER identified by $APEX_PWD;
+    exit;
 EOF
     echo "Apex has been reset/installed at "`date +%F-%T` > $ORDS_HOME/.apex_installed
     echo "Run $ORDS_HOME/APEX/apxchpwd.sql to reset password for the Apex ADMIN user"
