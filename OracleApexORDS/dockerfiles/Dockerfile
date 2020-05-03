@@ -45,6 +45,8 @@ COPY $INSTALL_FILE $APEX_FILE $APEX_INST $ORA_INST_CLIENT $CONFIG_PROPS $STANDAL
 # Adjust file permissions, go to /opt/oracle as user 'oracle' to proceed with ORDS installation
 # ------------------------------------------------------------
 RUN yum install -y libaio.x86_64 && \
+    yum install -y vi && \
+    yum install -y telnet && \
     mkdir -p  $ORDS_HOME/doc_root && \
     chmod ug+x $ORDS_HOME/*.sh && \
     groupadd -g 54322 dba && \
